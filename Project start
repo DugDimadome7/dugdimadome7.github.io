@@ -1,0 +1,12 @@
+"Log analysis and threat detection"
+Should:
+Parse auth logs (record who tries to log in, where form and if it was successful, log, username, time of attempt, source IP, 
+success or faliure, method
+>> Detect brute force attempt
+>> Impossible travel
+>> Rpeated IAM failures
+>> Output alerts
+
+from datetime import datetime
+import sys
+sys.argv[1] = filename
