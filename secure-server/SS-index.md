@@ -1,4 +1,5 @@
 # Summary
+---------
 *Secure Python Server Project*
 
 *This project is the beginning of building a secure server in Python. The goal is to create a server that can safely handle connections, protect sensitive information, and provide a foundation for adding authentication, encryption, logging, and other security features.*
@@ -13,7 +14,9 @@
 
 *The full programme will be linked at the end once finsihed, with my full permission to break it as you so desire.*
 
+----------------------------
 ## Setting up the TCP server
+----------------------------
 *The first stage of this project focuses on building the foundation of a secure server by developing a custom TCP server using Python sockets. The server is responsible for creating and managing network connections, listening for incoming client requests, receiving transmitted data, and handling communication between connected systems. This stage focuses on understanding how servers operate at a lower level before introducing higher-level protocols and security mechanisms.*
 
 *Key concepts explored in this stage include:*
