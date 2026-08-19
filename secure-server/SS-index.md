@@ -17,7 +17,6 @@
 *The first stage of this project focuses on building the foundation of a secure server by developing a custom TCP server using Python sockets. The server is responsible for creating and managing network connections, listening for incoming client requests, receiving transmitted data, and handling communication between connected systems. This stage focuses on understanding how servers operate at a lower level before introducing higher-level protocols and security mechanisms.*
 
 *Key concepts explored in this stage include:*
-
 - Creating TCP socket connections using Python
 - Binding servers to specific IP addresses and ports
 - Listening for and accepting client connections
@@ -37,13 +36,11 @@
 - Security logging
 - Vulnerability testing
 
-The objective of this project is to understand how secure server infrastructure is built from the ground up, rather than relying solely on pre-existing frameworks.
 <img width="595" height="757" alt="image" src="https://github.com/user-attachments/assets/d205bfac-7f1b-4981-814f-10420a9035df" />
 
 *The client component is responsible for establishing communication with the server and transmitting data across a TCP connection. Using Python sockets, the client creates a connection to the server, accepts user input, formats the data into network-ready messages, and sends the information across the established connection.*
 
 *This stage focuses on understanding the client-side processes involved in network communication, including:*
-
 - Establishing TCP connections
 - Communicating with remote services
 - Encoding and transmitting data
@@ -54,7 +51,6 @@ The objective of this project is to understand how secure server infrastructure 
 *Because TCP operates as a continuous data stream, the client also ensures messages are correctly separated before being transmitted. This provides a foundation for later improvements involving structured communication protocols and secure data exchange.*
 
 *Future development of the client will include implementing additional security features such as:*
-
 - Encrypted communication
 - Secure authentication
 - Session handling
@@ -63,4 +59,5 @@ The objective of this project is to understand how secure server infrastructure 
 - Secure request management
 
 *By developing both the server and client independently, this project provides a better understanding of how real-world networked applications communicate and where security weaknesses can occur.*
+
 <img width="616" height="550" alt="image" src="https://github.com/user-attachments/assets/31152063-0327-451c-a00e-0fc7f41d5d18" />
