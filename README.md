@@ -12,4 +12,4 @@
 ## Project 1 - *Building a secure server.*
 This project details the steps taken to build up a secure server using python, including systems such as implementing tcp and port services, rate limiting, logging, etc.
 
-[Click here to monitor its progress](/Secure Server/)
+[Click here to monitor its progress](./SS-index.md/)
