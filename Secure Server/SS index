@@ -9,4 +9,6 @@
 
 *Each component of the programme will be divided into different sections showcasing how each segment of the code works to show my understanding and allow you to understand my workings.*
 
+*For now the building roadmap should look like this: Basic TCP server → HTTP server → HTTPS → authentication → sessions → permissions → rate limiting → logging → security tests.*
+
 *The full programme will be linked at the end once finsihed, with my full permission to break it as you so desire.*
