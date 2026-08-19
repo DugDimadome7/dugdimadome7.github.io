@@ -12,7 +12,7 @@
 
 *For now the building roadmap should look like this: Basic TCP server → HTTP server → HTTPS → authentication → sessions → permissions → rate limiting → logging → security tests.*
 
-*The full programme will be linked at the end once finsihed, with my full permission to break it as you so desire.*
+*The full programme will be linked at the end once finished, with my full permission to break it as you so desire.*
 
 ----------------------------
 ## Setting up the TCP server
@@ -39,7 +39,32 @@
 - Security logging
 - Vulnerability testing
 
-<img width="595" height="757" alt="image" src="https://github.com/user-attachments/assets/d205bfac-7f1b-4981-814f-10420a9035df" />
+```import socket as soc
+
+buffer = ""
+
+server = soc.socket(soc.AF_INET, soc.SOCK_STREAM)
+server.bind(("127.0.0.1", 8000))
+
+server.listen(5)
+
+while True:
+    client, addr = server.accept()
+    while True:
+        client_msg = client.recv(1024)
+        if not client_msg:
+            break
+
+        buffer += client_msg.decode()
+        messages = buffer.split("\n")
+
+        for message in messages[:-1]:
+            print(message)
+        buffer = messages[-1]
+
+    client.send("Hello from e".encode())
+    client.close()
+```
 
 *The client component is responsible for establishing communication with the server and transmitting data across a TCP connection. Using Python sockets, the client creates a connection to the server, accepts user input, formats the data into network-ready messages, and sends the information across the established connection.*
 
@@ -63,4 +88,20 @@
 
 *By developing both the server and client independently, this project provides a better understanding of how real-world networked applications communicate and where security weaknesses can occur.*
 
-<img width="616" height="550" alt="image" src="https://github.com/user-attachments/assets/31152063-0327-451c-a00e-0fc7f41d5d18" />
+```import socket
+
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client.connect(("127.0.0.1", 8000))
+
+messages = input("Enter some crap this a test: ")
+
+for message in messages:
+    if not message.endswith("\n"):
+        message += "\n"
+
+    client.send(message.encode())
+
+print(client.recv(1024).decode())
+
+client.close()
+```
