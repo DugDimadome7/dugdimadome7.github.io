@@ -39,7 +39,8 @@
 - Security logging
 - Vulnerability testing
 
-```import socket as soc
+```
+import socket as soc
 
 buffer = ""
 
@@ -88,7 +89,8 @@ while True:
 
 *By developing both the server and client independently, this project provides a better understanding of how real-world networked applications communicate and where security weaknesses can occur.*
 
-```import socket
+```
+import socket
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(("127.0.0.1", 8000))
