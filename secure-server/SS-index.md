@@ -250,15 +250,17 @@ client.close()
 
 *To run the project:*
 
-1. *Start the HTTP server program.*
+1. *Start an IDE of choice for python
 
-2. *Leave the server running while it waits for a client connection.*
+2. *Run the HTTP server program.*
 
-3. *Run the HTTP client program separately.*
+3. *Leave the server running while it waits for a client connection.*
 
-4. *The client will connect to `127.0.0.1` on port `8000` and send the HTTP request.*
+4. *Run the HTTP client program separately to the HTTP server.*
 
-5. *The server will receive the request, parse the request line and headers, process the body if one is present, and display the resulting request data.*
+5. *The client will connect to `127.0.0.1` on port `8000` and send the HTTP request.*
+
+6. *The server will receive the request, parse the request line and headers, process the body if one is present, and display the resulting request data.*
 
 *The current implementation is intended for local development and testing, with the server bound to `127.0.0.1:8000`. This keeps the testing environment local while the HTTP functionality is being developed.*
 
