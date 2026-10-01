@@ -1,0 +1,29 @@
+import socket
+import ssl
+import subprocess
+import os
+
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client.connect(("127.0.0.1", 443))
+
+CA_direct = subprocess.check_output(["mkcert", "-CAROOT"])
+CA_direct = CA_direct.decode().strip()
+CA_path = os.path.join (CA_direct, "rootCA.pem")
+
+context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+context.load_verify_locations(cafile=CA_path)
+client = context.wrap_socket(client, server_hostname="localhost")
+
+message = (
+    "POST /login HTTPS/1.1\r\n"
+    "Host: localhost:8000\r\n"
+    "Content-Type: application/x-www-form-urlencoded\r\n"
+    "Content-Length: 27\r\n"
+    "\r\n"
+    "username=admin&password=admin"
+)
+client.send(message.encode())
+
+print(client.recv(1024).decode())
+
+client.close()
