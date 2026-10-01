@@ -1,0 +1,314 @@
+import socket as soc
+import ssl
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
+from urllib.parse import parse_qs
+import secrets
+import time
+
+server = soc.socket(soc.AF_INET, soc.SOCK_STREAM)
+server.bind(("127.0.0.1", 443))
+server.listen(5)
+
+context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+context.load_cert_chain("localhost.pem", "localhost-key.pem")
+
+paths = {"/login":["public", "user", "administrator"], "/admin": ["administrator"], "/profile":["user", "administrator"]}
+
+hasher = PasswordHasher()
+
+users = {"admin": hasher.hash("admin")}
+
+sessions = {}
+role = {"admin":"administrator"}
+
+usr_lockout = {}
+
+def login(body):
+    global usr_lockout
+
+    form_data = parse_qs(body)
+
+    login_u = form_data.get("username", [""])[0]
+    login_p = form_data.get("password", [""])[0]
+
+
+    if login_u in usr_lockout and usr_lockout[login_u][0] in [3, 6, 9, 12]:
+        result = failed_login(login_u)
+
+        if result is not None:
+            return result
+
+    try:
+        if login_u in users:
+            hasher.verify(users[login_u], login_p)
+
+            session_id = secrets.token_urlsafe(32)
+            sessions[session_id] = login_u
+            print("Login successful.\n")
+
+            if login_u not in usr_lockout:
+                usr_lockout[login_u] = [0, None]
+            else:
+                usr_lockout[login_u] = [0, None]
+
+            return "200 OK", b"Login successful.", session_id
+
+        else:
+            return failed_login(login_u)
+
+    except VerifyMismatchError:
+        return failed_login(login_u)
+
+
+def failed_login(username):
+
+    if username not in usr_lockout:
+        usr_lockout[username] = [0, None]
+        usr_lockout[username][0] += 1
+        print("Verification failed.")
+        return "401 UNAUTHORIZED", b"VERIFICATION FAILED.", None
+
+    elif username in usr_lockout and usr_lockout[username][0] not in [3, 6, 9, 12]:
+        usr_lockout[username][0] += 1
+        print("Verification failed.")
+        return "401 UNAUTHORIZED", b"VERIFICATION FAILED.", None
+
+    if usr_lockout[username][0] in [3, 6, 9] and usr_lockout[username][1] is None:
+        lockout_start = time.time()
+        usr_lockout[username][1] = lockout_start
+
+    match usr_lockout[username][0]:
+        case 3:
+            if usr_lockout[username][1] is not None:
+                current_time = time.time()
+
+                if current_time - usr_lockout[username][1] <= 300:
+                    print(f"Account locked for {300 - (current_time - usr_lockout[username][1])} seconds."
+                          f"Next failed attempt will be an hour.\n")
+                    return "429 TOO MANY REQUESTS", b"ACCOUNT LOCKED FOR 5 MINUTES, TRY AGAIN LATER.", None
+
+                else:
+                    usr_lockout[username][1] = None
+                    usr_lockout[username][0] += 1
+                    print("Account unlocked, 3 attempts remain before account is locked for an hour.\n")
+                    return None
+
+        case 6:
+            if usr_lockout[username][1] is not None:
+                current_time = time.time()
+
+                if current_time - usr_lockout[username][1] <= 3600:
+                    print(f"Account locked for {3600 - (current_time - usr_lockout[username][1])} seconds."
+                          f"Next failed attempt will be a day.\n")
+                    return "429 TOO MANY REQUESTS", b"ACCOUNT LOCKED FOR AN HOUR, TRY AGAIN LATER.", None
+
+                else:
+                    usr_lockout[username][1]=None
+                    usr_lockout[username][0] += 1
+                    print("Account unlocked, 3 attempts remain before account is locked for a day.\n")
+                    return None
+
+        case 9:
+            if usr_lockout[username][1] is not None:
+                current_time = time.time()
+
+                if current_time - usr_lockout[username][1] <= 86400:
+                    print(f"Account locked for {86400 - (current_time - usr_lockout[username][1])} seconds."
+                          f"Next failed attempt will be a day")
+                    return "429 TOO MANY REQUESTS", b"ACCOUNT LOCKED FOR A DAY, TRY AGAIN LATER.", None
+
+                else:
+                    usr_lockout[username][1]=None
+                    usr_lockout[username][0] += 1
+                    print("Account unlocked, 3 attempts remain before account is locked until administrator"
+                          " is contacted.\n")
+                    return None
+
+
+        case 12:
+            print(f"Account locked. No further attempts available. Contact administrators for help.")
+            return "429 TOO MANY REQUESTS", b"ACCOUNT PERMANENTLY SUSPENDED, CONTACT ADMINISTRATIVE TEAM.", None
+
+    if usr_lockout[username][0] >= 12:
+        print("Account locked. No further attempts available. Contact administrators for help.")
+        return "429 TOO MANY REQUESTS", b"ACCOUNT PERMANENTLY SUSPENDED, CONTACT ADMINISTRATIVE TEAM.", None
+    return None
+
+
+def permissions(path, username):
+
+    if path not in paths:
+        return "404 NOT FOUND", b"ERROR 404, PAGE NOT FOUND."
+
+    if username is None:
+        return "401 UNAUTHORIZED", b"AUTHENTICATION REQUIRED."
+
+    if username not in role:
+        return "403 FORBIDDEN", b"ERROR 403, PERMISSION DENIED."
+
+    req_role = paths[path]
+
+    if role[username] in req_role:
+        return "200 OK", b"PAGE ACCESSED."
+
+    return "403 FORBIDDEN", b"ERROR 403, PERMISSION DENIED."
+
+
+while True:
+    client, addr = server.accept()
+
+    client = context.wrap_socket(client, server_side=True)
+
+    while True:
+        time_log = time.time()
+
+
+
+        buffer = b""
+
+        while b"\r\n\r\n" not in buffer:
+            client_msg = client.recv(1024)
+
+            if not client_msg:
+                break
+
+            print(f"Receiving data from {addr}:\n")
+            buffer += client_msg
+
+        if b"\r\n\r\n" not in buffer:
+            break
+
+        if not buffer:
+            break
+
+        header_section, body = buffer.split(b"\r\n\r\n", 1)
+
+        messages = header_section.decode().split("\r\n")
+
+        method, path, version = messages[0].split(" ")
+
+        headers = {}
+
+        for line in messages[1:]:
+            key, value = line.split(":", 1)
+            headers[key] = value.strip()
+
+        content_len = int(headers.get("Content-Length", 0))
+
+        while len(body) < content_len:
+            body_data = client.recv(1024)
+
+            if not body_data:
+                break
+
+            body += body_data
+
+        request_data = {
+            "method": method,
+            "path": path,
+            "version": version,
+            "headers": headers,
+            "body": body.decode()
+        }
+
+        print(f"#Request Line: \n{messages[0]}")
+
+        print("\n#Headers:")
+        for key, value in request_data["headers"].items():
+            print(f"{key}: {value}")
+
+        print(f"\nBody:\n{body.decode()}")
+
+        status_code = "404 NOT FOUND"
+        response_body = b"ERROR 404, PAGE NOT FOUND."
+        session_id = None
+
+        cookie_get = headers.get("Cookie", "")
+        cookie = cookie_get.removeprefix("session_id=")
+        username = None
+
+        if cookie in sessions:
+            username = sessions[cookie]
+
+        match (request_data["method"]):
+            case "GET":
+                status_code, response_body = permissions(request_data["path"], username)
+
+            case "POST":
+
+                if request_data["path"] == "/login":
+                    content_type = headers.get("Content-Type", "")
+
+                    if "application/x-www-form-urlencoded" in content_type:
+                        status_code, response_body, session_id = login(request_data["body"])
+
+                    else:
+                        status_code = "415 UNSUPPORTED MEDIA TYPE"
+                        response_body = b"UNSUPPORTED MEDIA TYPE."
+
+                else:
+                    status_code, response_body = permissions(request_data["path"], username)
+
+            case _:
+                status_code = "405 METHOD NOT ALLOWED"
+                response_body = b"METHOD NOT ALLOWED"
+
+        resp_cont_len = len(response_body)
+
+        if session_id is not None:
+            client.send(f"{version} {status_code}\r\n"
+                        f"Set-Cookie: session_id={session_id}\r\n"
+                        f"Content-Type: text/plain\r\n"
+                        f"Content-Length: {resp_cont_len}\r\n"
+                        f"\r\n".encode() + response_body)
+
+        else:
+            client.send(f"{version} {status_code}\r\n"
+                        f"Content-Type: text/plain\r\n"
+                        f"Content-Length: {resp_cont_len}\r\n"
+                        f"\r\n".encode() + response_body)
+
+    Suc_login = True
+    Failed_login = False
+    Account_locked = False
+    Perma_lock = False
+    Access = False
+
+    if b"Login successful." in response_body:
+        Suc_login = False
+        Failed_login = True
+
+    if username in usr_lockout and usr_lockout[1] is not None:
+        Account_locked = True
+
+    if username in usr_lockout and usr_lockout[0] >= 12:
+        Perma_lock = True
+
+    if "200 OK." in status_code:
+        Access = True
+
+    if request_data["path"] == "":
+        request_data["path"] = "Path not defined. Connection potentially interrupted."
+
+    if request_data["method"] == "":
+        request_data["method"] = "Method not defined. Connection potentially interrupted."
+
+    with open("file.log", "w") as f:
+        f.write(f"Time of connection: {time_log}.\n"
+                f"Client address: {addr}\n."
+                f"HTTP method: {request_data['method']}\n"
+                f"Requested path: {request_data['path']}\n"
+                f"Successful login: {Suc_login}\n"
+                f"Login failed: {Failed_login}\n"
+                f"Account locked: {Account_locked}\n"
+                f"Permanently locked: {Perma_lock}\n"
+                f"Access granted: {Access}\n"
+                f"")
+
+    client.close()
+
+    #Make the log at the top, log each event as it happens and append it to
+    #the made log, if the log reads a certain line say the end of one log make
+    #it print on a new line so that it is easier to read and so each request can
+    #be easily seen. God just kill me man.
